@@ -1,4 +1,6 @@
 import sys
+import threading
+import time
 from pathlib import Path
 
 import pandas as pd
@@ -19,7 +21,7 @@ from scheduler.config.constants import (
     SHIFT_TO_IDX,
     SHIFT_UI_NAMES,
 )
-from scheduler.config.settings import TURN_HOURS
+from scheduler.config.settings import SOLVER_TIME_LIMIT, TURN_HOURS
 from scheduler.core.solve import solve_schedule
 from scheduler.interface.utils import (
     day_worker_matrix,
@@ -559,9 +561,66 @@ if st.button("🚀 Crear horario"):
         st.error("Falta demanda mínima.")
     else:
         request = RequestBuilder.from_dict(workers, availability, demand)
-        result = solve_schedule(request)
-        st.session_state["result"] = result
-        st.session_state["request"] = request
+        # Añadir un spinner mientras se resuelve
+        # with st.spinner("Generando horario..."):
+        #     result = solve_schedule(request)
+        # st.session_state["result"] = result
+        # st.session_state["request"] = request
+        # Contenedor y placeholders UI
+        status_ph = st.empty()
+        progress_ph = st.empty()
+
+        # Estado compartido con el thread
+        done = threading.Event()
+        result_holder = {"result": None, "error": None}
+
+        def run_solver():
+            try:
+                result_holder["result"] = solve_schedule(request)
+            except Exception as e:
+                result_holder["error"] = e
+            finally:
+                done.set()
+
+        # Lanzar solver en background thread
+        t = threading.Thread(target=run_solver, daemon=True)
+        t.start()
+
+        # Barra de progreso “fake” hasta SOLVER_TIME_LIMIT
+        start = time.time()
+        progress = progress_ph.progress(0, text="Generando horario...")
+        progress_value = 0
+
+        # animación normal mientras no termina
+        while not done.is_set():
+            elapsed = time.time() - start
+
+            if elapsed < SOLVER_TIME_LIMIT:
+                frac = elapsed / SOLVER_TIME_LIMIT
+                progress_value = min(int(frac * 100), 99)
+                progress_ph.progress(
+                    progress_value, text=f"Generando horario... {int(elapsed)}s"
+                )
+            else:
+                # tiempo máximo alcanzado
+                progress_value = 99
+                progress_ph.progress(99, text="Terminando...")
+
+            time.sleep(0.15)
+
+        # Si terminó: animación rápida hasta 100%
+        current = progress_ph.progress(99, text="Finalizando...")
+        for p in range(progress_value, 101):
+            progress_ph.progress(p, text="Finalizando...")
+            time.sleep(0.01)
+
+        # Mostrar estado final
+        if result_holder["error"] is not None:
+            st.error(f"Error en el solver: {result_holder['error']}")
+        else:
+            st.session_state["result"] = result_holder["result"]
+            st.session_state["request"] = request
+            status_ph.success("Horario generado ✅")
 
 # Mostrar resultado si existe
 if "result" in st.session_state and "request" in st.session_state:
@@ -612,15 +671,6 @@ if "result" in st.session_state and "request" in st.session_state:
     )
 
     st.dataframe(styled, use_container_width=True)
-    # styled = matrix.style.applymap(color_si_no, subset=turno_cols)
-
-    # st.dataframe(styled, use_container_width=True)
-    # styled = matrix.style.applymap(
-    #     lambda v: "background-color: #6ee757"
-    #     if v == "Sí"
-    #     else "background-color: #f78282"
-    # )
-    # st.dataframe(styled, use_container_width=True)
 
     col_save, col_dl = st.columns([1, 1])
 
