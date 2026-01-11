@@ -1,12 +1,12 @@
 # config/settings.py
 
 P_COVER = 100.0  # penalización déficit cobertura
-P_FULL = 10.0  # penalización día completo
+P_FULL = 100.0  # penalización día completo
 P_SPLIT = 5.0  # penalización turno partido
-P_EMPTY = 100  # o 1000 según pesos
-P_REST = 50.0  # penalización violación descanso mínimo
+P_EMPTY = 1000  # o 1000 según pesos
+P_REST = 10.0  # penalización violación descanso mínimo
 P_MAX_HOURS = 10.0  # penalización exceder horas máximas
-P_LESS = 0.1  # penalización horas menos que mínimo
+P_LESS = 0.5  # penalización horas menos que mínimo
 DEFAULT_MAX_HOURS = 40
 TURN_HOURS = {
     0: 4,  # mañana de 8 a 13
