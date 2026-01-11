@@ -1,0 +1,8 @@
+[
+    { "id": 0, "name": "Ana",   "max_hours": 40 },
+    { "id": 1, "name": "Luis",  "max_hours": 40 },
+    { "id": 2, "name": "Marta", "max_hours": 40 },
+    { "id": 3, "name": "Juan",  "max_hours": 40 },
+    { "id": 4, "name": "Sofia", "max_hours": 40 }
+]
+  

@@ -1,0 +1,7 @@
+pandas
+pulp
+numpy
+ipykernel
+pytest
+fastapi
+streamlit
